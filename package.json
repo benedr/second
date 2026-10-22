@@ -1,0 +1,17 @@
+{
+  "name": "telegram-redeem-code-referral-bot",
+  "version": "1.0.0",
+  "private": true,
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20.6"
+  },
+  "dependencies": {
+    "mongodb": "^6.17.0",
+    "node-telegram-bot-api": "^2.1.0"
+  }
+}
