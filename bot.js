@@ -148,15 +148,15 @@ function createLevelCaption(user, progress) {
     user.username ? `@${user.username}` : user.firstName || `User ${user.id}`,
   );
   const status = progress.completed
-    ? "🌈 All 4 redeem code levels are unlocked!"
+    ? "🌈 All 4 levels are complete — redeem code rewards unlocked!"
     : `${LEVEL_COUNT - progress.level} more verified referral${
         LEVEL_COUNT - progress.level === 1 ? "" : "s"
-      } to unlock all redeem codes.`;
+      } to complete all 4 levels and unlock the redeem code rewards.`;
   return (
     `<b>🎉 LEVEL ${progress.level} UNLOCKED! 🎉</b>\n\n` +
-    `✨ ${name} has unlocked <b>Redeem Code ${progress.level}</b>!\n` +
+    `✨ ${name} has unlocked <b>Level ${progress.level}</b>!\n` +
     `✅ <b>Total verified referrals:</b> ${progress.total}\n` +
-    `🎟️ <b>Redeem code level:</b> ${progress.level}/${LEVEL_COUNT}\n\n` +
+    `🏆 <b>Levels completed:</b> ${progress.level}/${LEVEL_COUNT}\n\n` +
     `📣 ${status}`
   );
 }
@@ -345,7 +345,7 @@ function createBot({
       ? linkEligible
         ? "✅ <b>Membership verified!</b>\n\n" +
           `🔗 <b>Your personal referral link</b>\n${escapeHtml(referralLink(username, userId))}\n\n` +
-          "🎯 Each verified referral unlocks one redeem code. Four referrals unlock all 4 codes.\n\n" +
+          "🎯 Each verified referral unlocks one level. Complete all 4 levels to unlock the redeem code rewards.\n\n" +
           `💬 <b>Join and interact in the group to learn how to participate:</b>\n${escapeHtml(groupChatLink)}`
         : "✅ <b>Membership verified!</b>\n\n" +
           "🆕 New channel members are not eligible for a personal referral link.\n\n" +
@@ -621,7 +621,7 @@ function createBot({
       await ctx.reply(
         `<b>📊 Your referral progress</b>\n\n` +
           `✅ Verified referrals: <b>${progress.total}</b>\n` +
-          `🎟️ Redeem code level: <b>${progress.level}/${LEVEL_COUNT}</b>\n\n` +
+          `🏆 Levels completed: <b>${progress.level}/${LEVEL_COUNT}</b>\n\n` +
           (user.onboardingCompletedAt &&
           user.linkEligible !== false &&
           user.channelVerifiedAt &&
