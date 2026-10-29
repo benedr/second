@@ -5,7 +5,9 @@ const path = require("node:path");
 const { Bot } = require("node-telegram-bot-api");
 const { fromPath, run } = require("node-telegram-bot-api/node");
 
-const LEVEL_COUNT = 4;
+const LEVEL_COUNT = 5;
+const REFERRALS_PER_LEVEL = 2;
+const REFERRAL_REWARD_TARGET = LEVEL_COUNT * REFERRALS_PER_LEVEL;
 const GROUP_CHAT_LINK = process.env.GROUP_CHAT_LINK?.trim();
 
 function createEmptyStore() {
@@ -33,12 +35,15 @@ function parseReferralPayload(text) {
 
 function getReferralProgress(count) {
   const total = Math.max(0, Number.isFinite(count) ? Math.floor(count) : 0);
-  const level = Math.min(total, LEVEL_COUNT);
+  const level = Math.min(
+    Math.floor(total / REFERRALS_PER_LEVEL),
+    LEVEL_COUNT,
+  );
   return {
     total,
     level,
     completed: level === LEVEL_COUNT,
-    referralsToNext: Math.max(0, LEVEL_COUNT - total),
+    referralsToNext: Math.max(0, REFERRAL_REWARD_TARGET - total),
   };
 }
 
@@ -148,10 +153,10 @@ function createLevelCaption(user, progress) {
     user.username ? `@${user.username}` : user.firstName || `User ${user.id}`,
   );
   const status = progress.completed
-    ? "🌈 All 4 levels are complete — redeem code rewards unlocked!"
-    : `${LEVEL_COUNT - progress.level} more verified referral${
-        LEVEL_COUNT - progress.level === 1 ? "" : "s"
-      } to complete all 4 levels and unlock the redeem code rewards.`;
+    ? "😋 All 5 levels are complete — Yum Emote rewards unlocked!"
+    : `${progress.referralsToNext} more verified referral${
+        progress.referralsToNext === 1 ? "" : "s"
+      } to complete all 5 levels and unlock the Yum Emote rewards.`;
   return (
     `<b>🎉 LEVEL ${progress.level} UNLOCKED! 🎉</b>\n\n` +
     `✨ ${name} has unlocked <b>Level ${progress.level}</b>!\n` +
@@ -174,7 +179,7 @@ async function loadMongoStore(database) {
   if (!metadata) {
     if (userDocuments.length || joinDocuments.length || entrantDocuments.length) {
       throw new Error(
-        "MongoDB contains redeem-code referral records but is missing store metadata",
+        "MongoDB contains emote referral records but is missing store metadata",
       );
     }
     return createEmptyStore();
@@ -275,9 +280,12 @@ function isNewChannelMember(oldMember, newMember) {
 
 function createTestLevelCaption(user, level) {
   return (
-    `<b>🧪 TEST PREVIEW — Redeem Code ${level}</b>\n` +
+    `<b>🧪 TEST PREVIEW — Yum Emote ${level}</b>\n` +
     "<i>No referral data was changed.</i>\n\n" +
-    createLevelCaption(user, getReferralProgress(level))
+    createLevelCaption(
+      user,
+      getReferralProgress(level * REFERRALS_PER_LEVEL),
+    )
   );
 }
 
@@ -345,7 +353,7 @@ function createBot({
       ? linkEligible
         ? "✅ <b>Membership verified!</b>\n\n" +
           `🔗 <b>Your personal referral link</b>\n${escapeHtml(referralLink(username, userId))}\n\n` +
-          "🎯 Each verified referral unlocks one level. Complete all 4 levels to unlock the redeem code rewards.\n\n" +
+          "🎯 Every 2 verified referrals unlock one level. Complete all 5 levels (10 verified referrals) to unlock the Yum Emote rewards.\n\n" +
           `💬 <b>Join and interact in the group to learn how to participate:</b>\n${escapeHtml(groupChatLink)}`
         : "✅ <b>Membership verified!</b>\n\n" +
           "🆕 New channel members are not eligible for a personal referral link.\n\n" +
@@ -374,7 +382,9 @@ function createBot({
     keyboard.push([{ text: "Join BIGWIN", url: "https://bigwiin.it.com" }]);
     await bot.api.sendPhoto({
       chat_id: userId,
-      photo: await fromPath(path.join(__dirname, "img", "redeem1.jfif")),
+      photo: await fromPath(
+        path.join(__dirname, "img", "emote", "emote initial.jfif"),
+      ),
       caption: text,
       parse_mode: "HTML",
       reply_markup: {
@@ -520,7 +530,8 @@ function createBot({
     const imagePath = path.join(
       __dirname,
       "img",
-      `redeem${progress.level}.jfif`,
+      "emote",
+      `emote${progress.level}.jfif`,
     );
     const sends = [
       bot.api.sendPhoto({
@@ -557,7 +568,12 @@ function createBot({
 
     for (let level = 1; level <= LEVEL_COUNT; level += 1) {
       const caption = createTestLevelCaption(user, level);
-      const imagePath = path.join(__dirname, "img", `redeem${level}.jfif`);
+      const imagePath = path.join(
+        __dirname,
+        "img",
+        "emote",
+        `emote${level}.jfif`,
+      );
       for (const chatId of [ctx.message.from.id, ...destinations]) {
         await bot.api.sendPhoto({
           chat_id: chatId,
@@ -789,6 +805,8 @@ if (require.main === module) {
 
 module.exports = {
   LEVEL_COUNT,
+  REFERRALS_PER_LEVEL,
+  REFERRAL_REWARD_TARGET,
   countVerifiedReferrals,
   completeRequiredMemberships,
   createEmptyStore,
