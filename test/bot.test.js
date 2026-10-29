@@ -2,6 +2,8 @@
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const { existsSync } = require("node:fs");
+const path = require("node:path");
 const {
   countVerifiedReferrals,
   createEmptyStore,
@@ -27,17 +29,21 @@ test("referral start payloads accept numeric inviter IDs only", () => {
   assert.equal(parseReferralPayload("/start ref_12 trailing"), null);
 });
 
-test("one verified referral unlocks one redeem code level, capped at four", () => {
+test("two verified referrals unlock one Yum Emote level, capped at five", () => {
   assert.deepEqual(getReferralProgress(0), {
     total: 0,
     level: 0,
     completed: false,
-    referralsToNext: 4,
+    referralsToNext: 10,
   });
-  assert.equal(getReferralProgress(1).level, 1);
-  assert.equal(getReferralProgress(3).level, 3);
-  assert.equal(getReferralProgress(4).completed, true);
+  assert.equal(getReferralProgress(1).level, 0);
+  assert.equal(getReferralProgress(2).level, 1);
+  assert.equal(getReferralProgress(4).level, 2);
+  assert.equal(getReferralProgress(6).level, 3);
+  assert.equal(getReferralProgress(8).level, 4);
   assert.equal(getReferralProgress(9).level, 4);
+  assert.equal(getReferralProgress(10).completed, true);
+  assert.equal(getReferralProgress(12).level, 5);
 });
 
 test("referral links use the Telegram start payload", () => {
@@ -47,35 +53,53 @@ test("referral links use the Telegram start payload", () => {
   );
 });
 
-test("level cards announce the matching redeem code and progress", () => {
+test("each pair of verified referrals unlocks a level and five levels unlock rewards", () => {
   assert.match(
     createLevelCaption(
       { id: "1", username: "alice" },
-      getReferralProgress(2),
+      getReferralProgress(4),
     ),
-    /alice has unlocked <b>Redeem Code 2<\/b>!/,
+    /alice has unlocked <b>Level 2<\/b>!/,
+  );
+  assert.match(
+    createLevelCaption(
+      { id: "1", username: "alice" },
+      getReferralProgress(1),
+    ),
+    /9 more verified referrals to complete all 5 levels/,
   );
   assert.match(
     createLevelCaption(
       { id: "1", firstName: "Alice" },
-      getReferralProgress(4),
+      getReferralProgress(10),
     ),
-    /🌈 All 4 redeem code levels are unlocked!/,
+    /😋 All 5 levels are complete — Yum Emote rewards unlocked!/,
   );
 });
 
-test("test announcements preview only the four level-unlock cards", () => {
-  for (let level = 1; level <= 4; level += 1) {
+test("test announcements preview all five Yum Emote level-unlock cards", () => {
+  for (let level = 1; level <= 5; level += 1) {
     const caption = createTestLevelCaption(
       { id: "1", username: "alice" },
       level,
     );
-    assert.ok(caption.includes(`🧪 TEST PREVIEW — Redeem Code ${level}`));
+    assert.ok(caption.includes(`🧪 TEST PREVIEW — Yum Emote ${level}`));
     assert.ok(caption.includes(`LEVEL ${level} UNLOCKED`));
-    assert.ok(caption.includes(`alice has unlocked <b>Redeem Code ${level}</b>!`));
+    assert.ok(caption.includes(`alice has unlocked <b>Level ${level}</b>!`));
     assert.doesNotMatch(
       caption,
       /welcome|new channel member|existing member verified/i,
+    );
+  }
+});
+
+test("initial and five level-up emote images are available", () => {
+  const imageDirectory = path.join(__dirname, "..", "img", "emote");
+  assert.equal(existsSync(path.join(imageDirectory, "emote initial.jfif")), true);
+  for (let level = 1; level <= 5; level += 1) {
+    assert.equal(
+      existsSync(path.join(imageDirectory, `emote${level}.jfif`)),
+      true,
     );
   }
 });
